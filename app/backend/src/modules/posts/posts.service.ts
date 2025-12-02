@@ -1,15 +1,20 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { ListPostsDto } from './dto/list-posts.dto';
-import { PaginatedPostsResponse, PostResponseDto } from './dto/post-response.dto';
+import {
+  PaginatedPostsResponse,
+  PostResponseDto,
+} from './dto/post-response.dto';
 import { PostStatus } from './entities/post-status.enum';
 import { Category } from '../categories/entities/category.entity';
-import { AnalyticsService } from '../analytics/analytics.service';
-import { AnalyticsEventType } from '../analytics/constants/event-types';
 
 @Injectable()
 export class PostsService {
@@ -18,7 +23,6 @@ export class PostsService {
     private readonly postsRepo: Repository<Post>,
     @InjectRepository(Category)
     private readonly categoriesRepo: Repository<Category>,
-    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async listPublic(dto: ListPostsDto): Promise<PaginatedPostsResponse> {
@@ -29,14 +33,19 @@ export class PostsService {
     return this.listPosts(dto, true);
   }
 
-  private async listPosts(dto: ListPostsDto, includeAllStatuses: boolean): Promise<PaginatedPostsResponse> {
+  private async listPosts(
+    dto: ListPostsDto,
+    includeAllStatuses: boolean,
+  ): Promise<PaginatedPostsResponse> {
     const page = dto.page ?? 1;
     const limit = dto.limit ?? 10;
 
     const qb = this.postsRepo.createQueryBuilder('post');
 
     if (!includeAllStatuses) {
-      qb.andWhere('post.status = :published', { published: PostStatus.PUBLISHED });
+      qb.andWhere('post.status = :published', {
+        published: PostStatus.PUBLISHED,
+      });
     } else if (dto.status) {
       qb.andWhere('post.status = :statusFilter', { statusFilter: dto.status });
     }
@@ -50,12 +59,17 @@ export class PostsService {
     }
 
     if (dto.categoryId) {
-      qb.andWhere('post.categoryId = :categoryId', { categoryId: dto.categoryId });
+      qb.andWhere('post.categoryId = :categoryId', {
+        categoryId: dto.categoryId,
+      });
     }
 
     qb.orderBy('post.publishAt', 'DESC').addOrderBy('post.createdAt', 'DESC');
 
-    const [records, total] = await qb.skip((page - 1) * limit).take(limit).getManyAndCount();
+    const [records, total] = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
 
     return {
       data: records.map(PostResponseDto.fromEntity),
@@ -68,7 +82,10 @@ export class PostsService {
     };
   }
 
-  async getPublishedPostBySlug(slug: string, userId?: number): Promise<PostResponseDto> {
+  async getPublishedPostBySlug(
+    slug: string,
+    userId?: number,
+  ): Promise<PostResponseDto> {
     const post = await this.postsRepo.findOne({
       where: { slug, status: PostStatus.PUBLISHED },
     });
@@ -76,13 +93,6 @@ export class PostsService {
     if (!post) {
       throw new NotFoundException('Post not found');
     }
-
-    await this.analyticsService.captureEvent({
-      userId: userId ?? 0,
-      eventType: AnalyticsEventType.VIEW_POST,
-      metadata: { postId: post.id, slug: post.slug },
-      source: 'backend',
-    });
 
     return PostResponseDto.fromEntity(post);
   }
@@ -110,7 +120,11 @@ export class PostsService {
     return PostResponseDto.fromEntity(saved);
   }
 
-  async update(id: number, dto: UpdatePostDto, currentUserId: number): Promise<PostResponseDto> {
+  async update(
+    id: number,
+    dto: UpdatePostDto,
+    currentUserId: number,
+  ): Promise<PostResponseDto> {
     const post = await this.requireAuthorAccess(id, currentUserId);
 
     if (dto.title && dto.title !== post.title) {
@@ -167,14 +181,19 @@ export class PostsService {
     await this.postsRepo.remove(post);
   }
 
-  private async requireAuthorAccess(id: number, currentUserId: number): Promise<Post> {
+  private async requireAuthorAccess(
+    id: number,
+    currentUserId: number,
+  ): Promise<Post> {
     const post = await this.postsRepo.findOne({ where: { id } });
     if (!post) {
       throw new NotFoundException('Post not found');
     }
 
     if (post.authorId !== currentUserId) {
-      throw new ForbiddenException('You do not have permission to modify this post');
+      throw new ForbiddenException(
+        'You do not have permission to modify this post',
+      );
     }
 
     return post;
@@ -185,13 +204,18 @@ export class PostsService {
       return;
     }
 
-    const exists = await this.categoriesRepo.findOne({ where: { id: categoryId } });
+    const exists = await this.categoriesRepo.findOne({
+      where: { id: categoryId },
+    });
     if (!exists) {
       throw new NotFoundException('Category not found');
     }
   }
 
-  private resolvePublishAt(status: PostStatus, publishAt?: string): Date | null {
+  private resolvePublishAt(
+    status: PostStatus,
+    publishAt?: string,
+  ): Date | null {
     if (status === PostStatus.PUBLISHED) {
       return publishAt ? new Date(publishAt) : new Date();
     }
@@ -199,7 +223,10 @@ export class PostsService {
     return publishAt ? new Date(publishAt) : null;
   }
 
-  private async generateUniqueSlug(title: string, existingId?: number): Promise<string> {
+  private async generateUniqueSlug(
+    title: string,
+    existingId?: number,
+  ): Promise<string> {
     const base = this.slugify(title);
     let slug = base;
     let counter = 1;
@@ -215,11 +242,13 @@ export class PostsService {
   }
 
   private slugify(input: string): string {
-    return input
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '')
-      .replace(/--+/g, '-') || 'post';
+    return (
+      input
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '')
+        .replace(/--+/g, '-') || 'post'
+    );
   }
 }

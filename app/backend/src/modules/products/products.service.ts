@@ -5,6 +5,11 @@ import { CategoriesService } from '../categories/categories.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
+import { ListProductsDto, ProductSortOption } from './dto/list-products.dto';
+import {
+  PaginatedProductsResponse,
+  ProductResponseDto,
+} from './dto/product-response.dto';
 
 @Injectable()
 export class ProductsService {
@@ -28,12 +33,6 @@ export class ProductsService {
     return this.repo.save(product);
   }
 
-  findAll() {
-    return this.repo.find({
-      relations: ['category'],
-    });
-  }
-
   findOne(id: number) {
     return this.repo.findOne({
       where: { id },
@@ -42,7 +41,10 @@ export class ProductsService {
   }
 
   async update(id: number, dto: UpdateProductDto) {
-    const product = await this.repo.findOne({ where: { id }, relations: ['category'] });
+    const product = await this.repo.findOne({
+      where: { id },
+      relations: ['category'],
+    });
     if (!product) {
       throw new NotFoundException();
     }
@@ -63,37 +65,104 @@ export class ProductsService {
     return this.repo.delete(id);
   }
 
-  async search(query: Record<string, any>) {
-    const qb = this.repo.createQueryBuilder('p').leftJoinAndSelect('p.category', 'c');
+  async list(dto: ListProductsDto): Promise<PaginatedProductsResponse> {
+    const page = dto.page ?? 1;
+    const limit = dto.limit ?? 12;
 
-    if (query.name) {
-      qb.andWhere('p.name ILIKE :name', { name: `%${query.name}%` });
+    const qb = this.repo
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category');
+
+    if (dto.search) {
+      const searchTerm = `%${dto.search.toLowerCase()}%`;
+      qb.andWhere(
+        '(LOWER(product.name) LIKE :search OR LOWER(product.description) LIKE :search)',
+        {
+          search: searchTerm,
+        },
+      );
     }
 
-    if (query.categoryId) {
-      qb.andWhere('c.id = :categoryId', { categoryId: query.categoryId });
+    if (dto.categoryId) {
+      qb.andWhere('category.id = :categoryId', { categoryId: dto.categoryId });
     }
 
-    if (query.color) {
-      qb.andWhere("p.attributes->>'color' = :color", { color: query.color });
+    if (dto.colors?.length) {
+      qb.andWhere("(product.attributes->>'color') IN (:...colors)", {
+        colors: dto.colors,
+      });
     }
 
-    if (query.size) {
-      qb.andWhere("p.attributes->>'size' = :size", { size: query.size });
+    if (dto.sizes?.length) {
+      qb.andWhere("(product.attributes->>'size') IN (:...sizes)", {
+        sizes: dto.sizes,
+      });
     }
 
-    if (query.material) {
-      qb.andWhere("p.attributes->>'material' = :material", { material: query.material });
+    if (dto.materials?.length) {
+      qb.andWhere("(product.attributes->>'material') IN (:...materials)", {
+        materials: dto.materials,
+      });
     }
 
-    if (query.minPrice) {
-      qb.andWhere('p.price >= :minPrice', { minPrice: query.minPrice });
+    if (dto.minPrice !== undefined) {
+      qb.andWhere('product.price >= :minPrice', { minPrice: dto.minPrice });
     }
 
-    if (query.maxPrice) {
-      qb.andWhere('p.price <= :maxPrice', { maxPrice: query.maxPrice });
+    if (dto.maxPrice !== undefined) {
+      qb.andWhere('product.price <= :maxPrice', { maxPrice: dto.maxPrice });
     }
 
-    return qb.getMany();
+    const aggregateQb = qb.clone();
+    const { min: minPriceRaw, max: maxPriceRaw } =
+      (await aggregateQb
+      .select('MIN(product.price)', 'min')
+      .addSelect('MAX(product.price)', 'max')
+        .getRawOne<{ min: string | null; max: string | null }>()) ?? {
+        min: null,
+        max: null,
+      };
+
+    switch (dto.sort) {
+      case ProductSortOption.PRICE_ASC:
+        qb.orderBy('product.price', 'ASC');
+        break;
+      case ProductSortOption.PRICE_DESC:
+        qb.orderBy('product.price', 'DESC');
+        break;
+      case ProductSortOption.POPULARITY:
+        qb.orderBy('product.stock', 'DESC');
+        break;
+      case ProductSortOption.RATING:
+        qb.orderBy('product.createdAt', 'DESC');
+        break;
+      default:
+        qb.orderBy('product.createdAt', 'DESC');
+        break;
+    }
+
+    const [records, total] = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
+    const priceRange = total
+      ? {
+          min: Number(minPriceRaw ?? 0),
+          max: Number(maxPriceRaw ?? 0),
+        }
+      : null;
+
+    return {
+      data: records.map(ProductResponseDto.fromEntity),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+        priceRange,
+      },
+    };
   }
 }

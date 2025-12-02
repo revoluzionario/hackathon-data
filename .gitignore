@@ -92,6 +92,8 @@ docker-compose.override.yml
 .env
 .env.local
 *.env
+!app/backend/.env.production
+!app/frontend/.env.example
 docker-compose.*.local.yml
 /tmp/*
 

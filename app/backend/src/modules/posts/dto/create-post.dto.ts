@@ -1,4 +1,14 @@
-import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min, MinLength, IsDateString } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  MinLength,
+  IsDateString,
+} from 'class-validator';
 import { PostStatus } from '../entities/post-status.enum';
 
 export class CreatePostDto {

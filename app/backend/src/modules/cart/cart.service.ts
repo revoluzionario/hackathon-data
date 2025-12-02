@@ -1,8 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AnalyticsService } from '../analytics/analytics.service';
-import { AnalyticsEventType } from '../analytics/constants/event-types';
 import { ProductsService } from '../products/products.service';
 import { UsersService } from '../users/users.service';
 import { AddToCartDto } from './dto/add-to-cart.dto';
@@ -20,7 +22,6 @@ export class CartService {
     private itemsRepo: Repository<CartItem>,
     private readonly usersService: UsersService,
     private readonly productsService: ProductsService,
-    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async getOrCreateCart(userId: number) {
@@ -65,13 +66,7 @@ export class CartService {
       }
 
       item.quantity = newQty;
-      const savedItem = await this.itemsRepo.save(item);
-      await this.analyticsService.captureEvent({
-        userId,
-        eventType: AnalyticsEventType.ADD_TO_CART,
-        metadata: { productId: dto.productId, quantity: dto.quantity },
-      });
-      return savedItem;
+      return this.itemsRepo.save(item);
     }
 
     item = this.itemsRepo.create({
@@ -80,13 +75,7 @@ export class CartService {
       quantity: dto.quantity,
     });
 
-    const savedItem = await this.itemsRepo.save(item);
-    await this.analyticsService.captureEvent({
-      userId,
-      eventType: AnalyticsEventType.ADD_TO_CART,
-      metadata: { productId: dto.productId, quantity: dto.quantity },
-    });
-    return savedItem;
+    return this.itemsRepo.save(item);
   }
 
   async updateItem(userId: number, dto: UpdateCartItemDto) {

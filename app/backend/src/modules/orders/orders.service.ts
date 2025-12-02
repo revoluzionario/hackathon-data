@@ -1,8 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AnalyticsService } from '../analytics/analytics.service';
-import { AnalyticsEventType } from '../analytics/constants/event-types';
 import { CartService } from '../cart/cart.service';
 import { ProductsService } from '../products/products.service';
 import { PaymentService } from './payment.service';
@@ -18,7 +20,6 @@ export class OrdersService {
     private itemsRepo: Repository<OrderItem>,
     private readonly cartService: CartService,
     private readonly productsService: ProductsService,
-    private readonly analyticsService: AnalyticsService,
     private readonly paymentService: PaymentService,
   ) {}
 
@@ -33,7 +34,9 @@ export class OrdersService {
 
     for (const item of cart.items) {
       if (item.quantity > item.product.stock) {
-        throw new BadRequestException(`Not enough stock for product ${item.product.name}`);
+        throw new BadRequestException(
+          `Not enough stock for product ${item.product.name}`,
+        );
       }
       total += Number(item.product.price) * item.quantity;
     }
@@ -102,14 +105,6 @@ export class OrdersService {
 
       await this.cartService.removeAllItems(order.user.id);
 
-      await this.analyticsService.captureEvent({
-        userId: order.user.id,
-        eventType: AnalyticsEventType.PAYMENT_SUCCESS,
-        metadata: {
-          orderId: order.id,
-          total: order.total_amount,
-        },
-      });
     }
 
     return order;

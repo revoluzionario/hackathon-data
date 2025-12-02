@@ -39,7 +39,10 @@ export class PostsController {
   @UseGuards(OptionalJwtAuthGuard)
   @Public()
   @Get(':slug')
-  async getBySlug(@Param('slug') slug: string, @CurrentUser() user: User | null) {
+  async getBySlug(
+    @Param('slug') slug: string,
+    @CurrentUser() user: User | null,
+  ) {
     return this.postsService.getPublishedPostBySlug(slug, user?.id);
   }
 
@@ -61,19 +64,28 @@ export class PostsController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/publish')
-  async publish(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
+  async publish(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: User,
+  ) {
     return this.postsService.publish(id, user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/unpublish')
-  async unpublish(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
+  async unpublish(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: User,
+  ) {
     return this.postsService.unpublish(id, user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: User,
+  ) {
     await this.postsService.remove(id, user.id);
     return { success: true };
   }

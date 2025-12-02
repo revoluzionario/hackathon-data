@@ -32,7 +32,10 @@ export class UnifiedRecommendationService {
     return normalized;
   }
 
-  async unifiedForUser(userId: number, topK = 20): Promise<RecommendationItemDto[]> {
+  async unifiedForUser(
+    userId: number,
+    topK = 20,
+  ): Promise<RecommendationItemDto[]> {
     const [mlRec, rtTrending, rbTrending] = await Promise.all([
       this.ml.recommendForUser(userId, topK),
       this.realtime.getRealtimeTrending(topK),
@@ -72,7 +75,10 @@ export class UnifiedRecommendationService {
       .map(([productId, score]) => ({ productId, score }));
   }
 
-  async unifiedForProduct(productId: number, topK = 20): Promise<RecommendationItemDto[]> {
+  async unifiedForProduct(
+    productId: number,
+    topK = 20,
+  ): Promise<RecommendationItemDto[]> {
     const [rtCoView, rbCoView] = await Promise.all([
       this.realtime.getRealtimeCoViewed(productId, topK),
       this.rules.getRelatedProducts(productId, topK),

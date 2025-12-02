@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AnalyticsEvent } from '../analytics/entities/analytics-event.entity';
 import { KqlQueryService } from '../analytics/services/kql-query.service';
-import { FabricSqlService } from '../admin/services/fabric-sql.service';
+import { DatabricksSqlService } from '../admin/services/databricks-sql.service';
 import {
   HomepageRecommendationDto,
   ProductRecommendationDto,
@@ -18,7 +18,7 @@ export class RecommendationsService {
     @InjectRepository(AnalyticsEvent)
     private readonly eventsRepo: Repository<AnalyticsEvent>,
     private readonly kql: KqlQueryService,
-    private readonly sql: FabricSqlService,
+    private readonly sql: DatabricksSqlService,
   ) {}
 
   async getTrendingProducts(limit = 10): Promise<RecommendationItemDto[]> {
@@ -40,12 +40,16 @@ export class RecommendationsService {
       return realtimeBoost;
     }
 
-    const boostMap = new Map(realtimeBoost.map((item) => [item.productId, item.score]));
+    const boostMap = new Map(
+      realtimeBoost.map((item) => [item.productId, item.score]),
+    );
     const conversionMultiplier = await this.getDailyConversionRateMultiplier();
 
     return baseline.map((item) => ({
       productId: item.productId,
-      score: Number((item.score * conversionMultiplier) + (boostMap.get(item.productId) ?? 0)),
+      score: Number(
+        item.score * conversionMultiplier + (boostMap.get(item.productId) ?? 0),
+      ),
     }));
   }
 
@@ -65,7 +69,10 @@ export class RecommendationsService {
     return this.mapPostgresResults(raw, 'productid', 'views');
   }
 
-  async getRelatedProducts(productId: number, limit = 10): Promise<RecommendationItemDto[]> {
+  async getRelatedProducts(
+    productId: number,
+    limit = 10,
+  ): Promise<RecommendationItemDto[]> {
     const normalizedId = Number(productId);
     if (!Number.isFinite(normalizedId)) {
       return [];
@@ -103,7 +110,9 @@ export class RecommendationsService {
     return { trending, weekly };
   }
 
-  async getProductRecommendations(productId: number): Promise<ProductRecommendationDto> {
+  async getProductRecommendations(
+    productId: number,
+  ): Promise<ProductRecommendationDto> {
     const [related, trending] = await Promise.all([
       this.getRelatedProducts(productId, 10),
       this.getTrendingProducts(5),
@@ -123,8 +132,18 @@ export class RecommendationsService {
 
     return rows
       .map((row) => {
-        const productIdValue = this.pickValue(row, [idKey, idKey.toLowerCase(), 'productId', 'productid']);
-        const scoreValue = this.pickValue(row, [scoreKey, scoreKey.toLowerCase(), 'views', 'freq']);
+        const productIdValue = this.pickValue(row, [
+          idKey,
+          idKey.toLowerCase(),
+          'productId',
+          'productid',
+        ]);
+        const scoreValue = this.pickValue(row, [
+          scoreKey,
+          scoreKey.toLowerCase(),
+          'views',
+          'freq',
+        ]);
         const productId = Number(productIdValue);
         const score = Number(scoreValue);
         if (!Number.isFinite(productId) || !Number.isFinite(score)) {
@@ -135,7 +154,10 @@ export class RecommendationsService {
       .filter((item): item is RecommendationItemDto => Boolean(item));
   }
 
-  private pickValue(row: Record<string, any>, keys: (string | undefined)[]): any {
+  private pickValue(
+    row: Record<string, any>,
+    keys: (string | undefined)[],
+  ): any {
     for (const key of keys) {
       if (!key) continue;
       if (row[key] !== undefined) {
@@ -145,7 +167,9 @@ export class RecommendationsService {
     return undefined;
   }
 
-  private async fetchTrendingFromKql(limit: number): Promise<RecommendationItemDto[]> {
+  private async fetchTrendingFromKql(
+    limit: number,
+  ): Promise<RecommendationItemDto[]> {
     try {
       const kql = `
         realtime_events
@@ -156,7 +180,9 @@ export class RecommendationsService {
       const result = await this.kql.query(kql);
       return this.parseKqlResult(result, 'productId', 'views');
     } catch (error) {
-      this.logger.warn(`KQL trending fallback failed: ${error?.message ?? error}`);
+      this.logger.warn(
+        `KQL trending fallback failed: ${error?.message ?? error}`,
+      );
       return [];
     }
   }
@@ -171,10 +197,16 @@ export class RecommendationsService {
       return [];
     }
 
-    const columns = (table.Columns ?? table.columns ?? []).map((col: any) => col?.ColumnName ?? col?.name);
+    const columns = (table.Columns ?? table.columns ?? []).map(
+      (col: any) => col?.ColumnName ?? col?.name,
+    );
     const rows = table.Rows ?? table.rows ?? [];
-    const productIdx = columns.findIndex((name: string) => name?.toLowerCase() === productColumn.toLowerCase());
-    const scoreIdx = columns.findIndex((name: string) => name?.toLowerCase() === scoreColumn.toLowerCase());
+    const productIdx = columns.findIndex(
+      (name: string) => name?.toLowerCase() === productColumn.toLowerCase(),
+    );
+    const scoreIdx = columns.findIndex(
+      (name: string) => name?.toLowerCase() === scoreColumn.toLowerCase(),
+    );
     if (productIdx === -1 || scoreIdx === -1) {
       return [];
     }
@@ -198,11 +230,14 @@ export class RecommendationsService {
       if (!rows.length) {
         return 1;
       }
-      const conversion = rows[0].conversion_rate ?? rows[0].conversionRate ?? rows[0][5];
+      const conversion =
+        rows[0].conversion_rate ?? rows[0].conversionRate ?? rows[0][5];
       const numeric = Number(conversion);
       return Number.isFinite(numeric) && numeric > 0 ? numeric : 1;
     } catch (error) {
-      this.logger.warn(`Fabric SQL daily report unavailable: ${error?.message ?? error}`);
+      this.logger.warn(
+        `Databricks SQL daily report unavailable: ${error?.message ?? error}`,
+      );
       return 1;
     }
   }

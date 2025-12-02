@@ -1,24 +1,24 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { FabricSqlService } from '../services/fabric-sql.service';
+import { DatabricksSqlService } from '../services/databricks-sql.service';
 import { Roles } from '../../../common/decorators/roles.decorator';
 
 @Controller('admin/reports')
 @Roles('admin')
 export class AdminReportsController {
-  constructor(private readonly fabricSql: FabricSqlService) {}
+  constructor(private readonly databricksSql: DatabricksSqlService) {}
 
   @Get('daily')
   async dailyReport(@Query('date') date?: string) {
-    return this.fabricSql.queryDailyReport(date);
+    return this.databricksSql.queryDailyReport(date);
   }
 
   @Get('weekly')
   async weeklyReport(@Query('week') week?: string) {
-    return this.fabricSql.queryWeeklyReport(week);
+    return this.databricksSql.queryWeeklyReport(week);
   }
 
   @Get('monthly')
   async monthlyReport(@Query('month') month?: string) {
-    return this.fabricSql.queryMonthlyReport(month);
+    return this.databricksSql.queryMonthlyReport(month);
   }
 }

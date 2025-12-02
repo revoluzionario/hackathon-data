@@ -44,7 +44,11 @@ export class Post {
   @Column({ name: 'author_id' })
   authorId!: number;
 
-  @ManyToOne(() => Category, { nullable: true, eager: false, onDelete: 'SET NULL' })
+  @ManyToOne(() => Category, {
+    nullable: true,
+    eager: false,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'category_id' })
   category?: Category | null;
 

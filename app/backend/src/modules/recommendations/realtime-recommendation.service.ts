@@ -19,7 +19,10 @@ export class RealtimeRecommendationService {
     return this.runRealtimeQuery(query, 'productId', 'views');
   }
 
-  async getRealtimeCoViewed(productId: number, limit = 20): Promise<RecommendationItemDto[]> {
+  async getRealtimeCoViewed(
+    productId: number,
+    limit = 20,
+  ): Promise<RecommendationItemDto[]> {
     const cleanedId = this.cleanId(productId);
     if (!cleanedId) {
       return [];
@@ -40,7 +43,10 @@ export class RealtimeRecommendationService {
     return this.runRealtimeQuery(query, 'productId', 'freq');
   }
 
-  async getRealtimeCategoryTrending(categoryId: string, limit = 20): Promise<RecommendationItemDto[]> {
+  async getRealtimeCategoryTrending(
+    categoryId: string,
+    limit = 20,
+  ): Promise<RecommendationItemDto[]> {
     if (!categoryId) {
       return [];
     }
@@ -57,7 +63,11 @@ export class RealtimeRecommendationService {
     return this.runRealtimeQuery(query, 'productId', 'views');
   }
 
-  private async runRealtimeQuery(query: string, productKey: string, scoreKey: string): Promise<RecommendationItemDto[]> {
+  private async runRealtimeQuery(
+    query: string,
+    productKey: string,
+    scoreKey: string,
+  ): Promise<RecommendationItemDto[]> {
     try {
       const result = await this.kql.query(query);
       const table = result?.tables?.[0] ?? result?.Tables?.[0];
@@ -92,7 +102,10 @@ export class RealtimeRecommendationService {
   private findColumnIndex(columns: any[], name: string): number {
     return columns.findIndex((col) => {
       const colName = col?.name ?? col?.ColumnName ?? col;
-      return typeof colName === 'string' && colName.toLowerCase() === name.toLowerCase();
+      return (
+        typeof colName === 'string' &&
+        colName.toLowerCase() === name.toLowerCase()
+      );
     });
   }
 

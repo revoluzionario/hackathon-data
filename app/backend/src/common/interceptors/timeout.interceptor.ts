@@ -5,7 +5,13 @@ import {
   NestInterceptor,
   RequestTimeoutException,
 } from '@nestjs/common';
-import { Observable, TimeoutError, catchError, throwError, timeout } from 'rxjs';
+import {
+  Observable,
+  TimeoutError,
+  catchError,
+  throwError,
+  timeout,
+} from 'rxjs';
 
 const DEFAULT_TIMEOUT_MS = 5000;
 

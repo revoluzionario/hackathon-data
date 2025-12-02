@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AnalyticsModule } from '../analytics/analytics.module';
 import { CartModule } from '../cart/cart.module';
 import { ProductsModule } from '../products/products.module';
 import { UsersModule } from '../users/users.module';
@@ -17,7 +16,6 @@ import { OrdersService } from './orders.service';
     UsersModule,
     CartModule,
     ProductsModule,
-    AnalyticsModule,
   ],
   controllers: [OrdersController, PaymentController],
   providers: [OrdersService, PaymentService],

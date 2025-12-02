@@ -9,10 +9,14 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.use('/orders/payment/webhook', express.raw({ type: '*/*' }), (req, res, next) => {
-    (req as any).rawBody = req.body;
-    next();
-  });
+  app.use(
+    '/orders/payment/webhook',
+    express.raw({ type: '*/*' }),
+    (req, res, next) => {
+      req.rawBody = req.body;
+      next();
+    },
+  );
 
   const httpAdapter = app.getHttpAdapter().getInstance();
   if (httpAdapter?.set) {
@@ -20,7 +24,10 @@ async function bootstrap() {
   }
   app.use(helmet());
 
-  const corsOrigins = (process.env.CORS_ORIGIN ?? '').split(',').map((origin) => origin.trim()).filter(Boolean);
+  const corsOrigins = (process.env.CORS_ORIGIN ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   app.enableCors({
     origin: corsOrigins.length > 0 ? corsOrigins : ['http://localhost:3000'],
     credentials: true,

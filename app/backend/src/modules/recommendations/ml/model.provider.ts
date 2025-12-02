@@ -12,21 +12,27 @@ export class MLModelProvider implements OnModuleInit {
     try {
       const modelPath = path.join(process.cwd(), 'models/als_recommender.onnx');
       if (!fs.existsSync(modelPath)) {
-        this.logger.warn(`ONNX model not found at ${modelPath}. ML recommendations disabled.`);
+        this.logger.warn(
+          `ONNX model not found at ${modelPath}. ML recommendations disabled.`,
+        );
         return;
       }
       const modelBuffer = fs.readFileSync(modelPath);
       this.session = await ort.InferenceSession.create(modelBuffer);
       this.logger.log('ONNX recommendation model loaded successfully.');
     } catch (error) {
-      this.logger.error(`Failed to load ONNX model: ${error?.message ?? error}`);
+      this.logger.error(
+        `Failed to load ONNX model: ${error?.message ?? error}`,
+      );
       this.session = null;
     }
   }
 
   getSession(): ort.InferenceSession | null {
     if (!this.session) {
-      this.logger.warn('ONNX session not initialized. Falling back to empty recommendations.');
+      this.logger.warn(
+        'ONNX session not initialized. Falling back to empty recommendations.',
+      );
       return null;
     }
     return this.session;

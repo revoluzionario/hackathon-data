@@ -22,12 +22,15 @@ import { RolesGuard } from './common/guards/roles.guard';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
+      envFilePath:
+        process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60,
-      limit: Number(process.env.RATE_LIMIT_MAX ?? 120),
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60,
+        limit: Number(process.env.RATE_LIMIT_MAX ?? 120),
+      },
+    ]),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST ?? 'localhost',
@@ -38,7 +41,10 @@ import { RolesGuard } from './common/guards/roles.guard';
       autoLoadEntities: true,
       synchronize: false,
       migrationsRun: true,
-      ssl: (process.env.DB_SSL ?? 'false') === 'true' ? { rejectUnauthorized: false } : undefined,
+      ssl:
+        (process.env.DB_SSL ?? 'false') === 'true'
+          ? { rejectUnauthorized: false }
+          : undefined,
     }),
     UsersModule,
     AuthModule,

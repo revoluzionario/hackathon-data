@@ -5,9 +5,9 @@ import { User } from './entities/user.entity';
 
 @Controller('users')
 export class UsersController {
-	@UseGuards(JwtAuthGuard)
-	@Get('me')
-	getMe(@CurrentUser() user: User) {
-		return user;
-	}
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  getMe(@CurrentUser() user: User) {
+    return user;
+  }
 }

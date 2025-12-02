@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { KqlQueryService } from '../../analytics/services/kql-query.service';
-import { FabricSqlService } from './fabric-sql.service';
+import { DatabricksSqlService } from './databricks-sql.service';
 
 @Injectable()
 export class AdminDashboardService {
   constructor(
     private readonly kql: KqlQueryService,
-    private readonly sql: FabricSqlService,
+    private readonly sql: DatabricksSqlService,
   ) {}
 
   async getOnlineUsers() {
@@ -68,8 +68,9 @@ export class AdminDashboardService {
       LIMIT 1
     `;
     const res = await this.sql.runSql(sql);
-    const row = res?.Tables?.[0]?.Rows?.[0] ?? {};
-    const value = row.return_rate ?? row.returnRate ?? 0;
+    const row = res?.rows?.[0] ?? {};
+    const value =
+      row.return_rate ?? row.returnRate ?? row.RETURN_RATE ?? row[5] ?? 0;
 
     return {
       value,

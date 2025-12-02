@@ -7,7 +7,10 @@ import { RecommendationItemDto } from '../dto/recommendation-response.dto';
 export class MLRecommendationService {
   constructor(private readonly modelProvider: MLModelProvider) {}
 
-  async recommendForUser(userId: number, topK = 10): Promise<RecommendationItemDto[]> {
+  async recommendForUser(
+    userId: number,
+    topK = 10,
+  ): Promise<RecommendationItemDto[]> {
     if (!Number.isFinite(userId)) {
       return [];
     }
@@ -52,11 +55,15 @@ export class MLRecommendationService {
 
     if (ArrayBuffer.isView(data)) {
       // cast to unknown first to satisfy TS that this conversion is intentional
-      return Array.from(data as unknown as ArrayLike<number | bigint>).map((value) => Number(value));
+      return Array.from(data as unknown as ArrayLike<number | bigint>).map(
+        (value) => Number(value),
+      );
     }
 
     if (typeof (data as any)[Symbol.iterator] === 'function') {
-      return Array.from(data as Iterable<number | bigint>).map((value) => Number(value));
+      return Array.from(data as Iterable<number | bigint>).map((value) =>
+        Number(value),
+      );
     }
 
     return [];
